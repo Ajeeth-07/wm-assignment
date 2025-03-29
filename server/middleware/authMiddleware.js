@@ -1,11 +1,11 @@
 const {admin} = require('../config/firebase')
 
-const verifyToken = async(req, resizeBy, next) => {
+const verifyToken = async(req, res, next) => {
     try{
         const idToken = req.headers.authorization?.split('Bearer ')[1];
 
         if(!idToken){
-            return resizeBy.status(401).json({error: 'Unauthorized: No token provided'});
+            return res.status(401).json({error: 'Unauthorized: No token provided'});
         }
 
         const decodedToken = await admin.auth().verifyToken(idToken);

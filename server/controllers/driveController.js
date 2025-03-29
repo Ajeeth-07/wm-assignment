@@ -1,6 +1,6 @@
 const {google} = require('googleapis');
 const {db} = require('../config/fireabase');
-const {getOAuth2Client} = require('../utils/googleDriveutil');
+const {getOAuth2Client} = require('../utils/googleDriveUtil');
 
 
 //save doc to gdrive

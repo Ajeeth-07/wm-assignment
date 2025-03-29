@@ -13,7 +13,7 @@ const storeUserTokens = async(req, res) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         }, {merge: true});
 
-        res.status(200).hson({success: true});
+        res.status(200).json({success: true});
     }catch(error){
         console.error('Error storing user tokens:', error);
         res.status(500).json({error:error.message});

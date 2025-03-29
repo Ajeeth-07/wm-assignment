@@ -3,9 +3,9 @@ const cors = require("cors");
 require('dotenv').config();
 
 //routes
-// const authRoutes = require('./routes/authRoutes');
-// const draftRoutes = require('./routes/draftRoutes');
-// const driveRoutes = require('./routes/driveRoutes');
+ const authRoutes = require('./routes/authRoutes');
+ const draftRoutes = require('./routes/draftRoutes');
+ const driveRoutes = require('./routes/driveRoutes');
 
 
 //firebase admin
