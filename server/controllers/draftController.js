@@ -83,7 +83,7 @@ const deleteDraft = async(req, res) => {
         const draftId = req.params.draftId;
         const userId = req.user.uid;
 
-        const draftDoc = await db.collection('drafts').doc('draftId').get();
+        const draftDoc = await db.collection('drafts').doc(draftId).get();
 
         if(!draftDoc.exists){
             return res.status(404).json({error : 'Draft not found'});

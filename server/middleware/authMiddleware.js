@@ -8,7 +8,7 @@ const verifyToken = async(req, res, next) => {
             return res.status(401).json({error: 'Unauthorized: No token provided'});
         }
 
-        const decodedToken = await admin.auth().verifyToken(idToken);
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
         req.user = decodedToken;
         next();
     }catch(error){

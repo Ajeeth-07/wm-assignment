@@ -1,5 +1,5 @@
 const {google} = require('googleapis');
-const {db} = require('../config/fireabase');
+const {db} = require('../config/firebase');
 const {getOAuth2Client} = require('../utils/googleDriveUtil');
 
 
