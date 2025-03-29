@@ -9,7 +9,9 @@ require('dotenv').config();
 
 
 //firebase admin
-// require('./config/firebase');
+require('./config/firebase');
+
+const app = express();
 
 //middleware
 app.use(cors());
