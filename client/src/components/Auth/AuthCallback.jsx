@@ -6,24 +6,36 @@ import api from "../../services/api";
 const AuthCallback = () => {
   const [status, setStatus] = useState("Processing authentication...");
   const [error, setError] = useState(null);
+  const [code, setCode] = useState(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser, loading } = useAuth(); // Get loading state too
 
+  // First useEffect to capture the code when component mounts
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authCode = params.get("code");
+    console.log("Auth callback received, code present:", !!authCode);
+
+    if (authCode) {
+      setCode(authCode);
+    } else {
+      setError("No authorization code found in URL parameters");
+    }
+  }, []);
+
+  // Second useEffect to process the code once user is loaded
   useEffect(() => {
     async function handleCallback() {
+      // Only proceed if we have both the code and the user
+      if (!code || loading) return;
+
+      if (!currentUser) {
+        setError("Please log in to complete Google Drive authorization");
+        return;
+      }
+
       try {
-        // Instead of localStorage, get the code from URL parameters
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get("code");
-
-        // Log for debugging
-        console.log("Auth callback received, code present:", !!code);
-
-        if (!code) {
-          setError("No authorization code found in URL parameters");
-          return;
-        }
-
+        console.log("User authenticated:", currentUser.uid);
         setStatus("Exchanging code for tokens...");
 
         // Exchange the code for tokens
@@ -33,20 +45,26 @@ const AuthCallback = () => {
             "https://wm-assignment-backend.onrender.com/auth/google-callback",
         });
 
+        console.log(
+          "Token exchange response:",
+          response.data ? "Success" : "Failed"
+        );
+
+        if (!response.data || !response.data.tokens) {
+          throw new Error("Failed to receive tokens from server");
+        }
+
         setStatus("Saving tokens...");
 
-        // If user is logged in, store the tokens
-        if (user && user.uid && response.data && response.data.tokens) {
-          await api.storeFirebaseToken(user.uid, response.data.tokens);
-          setStatus("Successfully connected to Google Drive!");
+        // Store the tokens
+        await api.storeUserTokens(currentUser.uid, response.data.tokens);
 
-          // Navigate back to homepage after 2 seconds
-          setTimeout(() => {
-            navigate("/");
-          }, 2000);
-        } else {
-          throw new Error("User not authenticated or tokens not received");
-        }
+        setStatus("Successfully connected to Google Drive!");
+
+        // Navigate back to homepage after 2 seconds
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
       } catch (error) {
         console.error("Auth callback error:", error);
         setError(error.message || "Failed to complete authentication");
@@ -54,35 +72,33 @@ const AuthCallback = () => {
     }
 
     handleCallback();
-  }, [user, navigate]);
+  }, [code, currentUser, loading, navigate]);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-xl">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-          Google Drive Authorization
-        </h2>
+    <div className="max-w-md mx-auto my-10 p-6 bg-white rounded shadow-lg">
+      <h2 className="text-2xl font-bold mb-4 text-center">
+        Google Drive Authorization
+      </h2>
 
-        {error ? (
-          <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">
-            <p className="font-medium">Error</p>
-            <p>{error}</p>
-            <button
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={() => navigate("/")}
-            >
-              Return Home
-            </button>
-          </div>
-        ) : (
-          <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded">
-            <p className="text-center">{status}</p>
-            <div className="flex justify-center mt-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
-        )}
-      </div>
+      {error ? (
+        <div className="bg-red-100 p-4 mb-4 rounded text-red-700">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
+          <button
+            className="mt-3 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => navigate("/")}
+          >
+            Return Home
+          </button>
+        </div>
+      ) : (
+        <div className="bg-blue-100 p-4 rounded text-blue-700 text-center">
+          <p>{status}</p>
+          {status !== "Successfully connected to Google Drive!" && (
+            <div className="loader mt-4 mx-auto"></div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

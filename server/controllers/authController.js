@@ -5,19 +5,32 @@ const storeUserTokens = async (req, res) => {
   try {
     const { uid, tokens } = req.body;
 
-    if (!uid || !tokens)
-      return res.status(400).json({ error: "Missing required fields" });
+    console.log("Storing tokens for user:", uid);
+    console.log("- Access token present:", !!tokens.access_token);
+    console.log("- Refresh token present:", !!tokens.refresh_token);
 
-    //storing tokens in firestore
+    if (!uid || !tokens) {
+      return res.status(400).json({ error: "User ID and tokens are required" });
+    }
+
+    // Verify the database connection first
+    const { db } = require("../config/firebase");
+    if (!db || !db.collection) {
+      throw new Error("Firestore not properly initialized");
+    }
+
+    // Store the tokens in Firestore
     await db.collection("users").doc(uid).set(
       {
-        tokens,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        tokens: tokens,
+        updatedAt: new Date().toISOString(),
       },
       { merge: true }
     );
 
-    res.status(200).json({ success: true });
+    console.log("Tokens stored successfully for user:", uid);
+
+    res.json({ success: true });
   } catch (error) {
     console.error("Error storing user tokens:", error);
     res.status(500).json({ error: error.message });

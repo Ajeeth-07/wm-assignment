@@ -34,31 +34,30 @@ router.get("/google-auth-url", async (req, res) => {
   }
 });
 
-// Update your google-callback endpoint
+// Add or update this route
 router.post("/google-callback", async (req, res) => {
   try {
     const { code, redirectUri } = req.body;
-    console.log("Received code exchange request:", {
-      codeLength: code ? code.length : 0,
-      redirectUri,
-    });
+
+    console.log("Received code exchange request:");
+    console.log("- Code present:", !!code);
+    console.log("- Redirect URI:", redirectUri);
 
     if (!code) {
       return res.status(400).json({ error: "Authorization code is required" });
     }
 
-    console.log("Using redirect URI for token exchange:", redirectUri);
-    console.log("Attempting to exchange code for tokens...");
+    // Exchange the authorization code for tokens
     const tokens = await getTokensFromCode(code, redirectUri);
-    console.log("Token exchange successful");
 
-    res.json({ tokens });
+    console.log("Tokens received from Google:");
+    console.log("- Access token present:", !!tokens.access_token);
+    console.log("- Refresh token present:", !!tokens.refresh_token);
+
+    res.json({ success: true, tokens });
   } catch (error) {
-    console.error("Error exchanging auth code:", error);
-    if (error.response) {
-      console.error("Google API error response:", error.response.data);
-    }
-    res.status(500).json({ error: error.message, details: error.stack });
+    console.error("Error exchanging code for tokens:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

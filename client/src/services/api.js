@@ -45,17 +45,7 @@ const api = {
   },
 
   storeUserTokens: async (uid, tokens) => {
-    try {
-      const response = await apiClient.post("/auth/firebase-token", {
-        uid,
-        accessToken: tokens.access_token,
-        idToken: tokens.id_token,
-      });
-      return response.data;
-    } catch (error) {
-      console.warn("Non-critical error storing tokens:", error);
-      return { success: false, error: error.message };
-    }
+    return await apiClient.post("/auth/tokens", { uid, tokens });
   },
 
   getUserProfile: async (token) => {
@@ -86,10 +76,7 @@ const api = {
   },
 
   exchangeGoogleCode: async (data) => {
-    return await apiClient.post("/auth/google-callback", {
-      code: data.code,
-      redirectUri: data.redirectUri,
-    });
+    return await apiClient.post("/auth/google-callback", data);
   },
 
   storeFirebaseToken: async (uid, tokens) => {
