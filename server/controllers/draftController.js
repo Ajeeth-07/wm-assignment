@@ -1,26 +1,51 @@
 const { db } = require("../config/firebase");
 
+// Update the saveDraft function to ensure it returns the draft ID
 const saveDraft = async (req, res) => {
   try {
-    const { title, content } = req.body;
     const userId = req.user.uid;
+    const draft = req.body;
     const draftId = req.params.draftId;
 
-    const draftData = {
-      title: title || "Untitled",
-      content,
-      updatedAt: new Date().toISOString(),
-      userId,
-    };
-
-    if (draftId) {
-      await db.collection("drafts").doc(draftId).update(draftData);
-    } else {
-      draftData.createdAt = new Date().toISOString();
-      await db.collection("drafts").add(draftData);
+    if (!draft.title || !draft.content) {
+      return res.status(400).json({ error: "Title and content are required" });
     }
 
-    res.status(200).json({ success: true, draftId });
+    draft.userId = userId; // Ensure userId is set
+    draft.updatedAt = new Date().toISOString();
+
+    let docId;
+
+    if (draftId) {
+      // Update existing draft
+      const draftRef = db.collection("drafts").doc(draftId);
+      const doc = await draftRef.get();
+
+      if (!doc.exists) {
+        return res.status(404).json({ error: "Draft not found" });
+      }
+
+      if (doc.data().userId !== userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      await draftRef.update(draft);
+      docId = draftId;
+    } else {
+      // Create new draft
+      draft.createdAt = new Date().toISOString();
+      const docRef = await db.collection("drafts").add(draft);
+      docId = docRef.id;
+    }
+
+    // Return the draft ID in the response
+    res.status(200).json({
+      success: true,
+      id: docId,
+      message: draftId
+        ? "Draft updated successfully"
+        : "Draft created successfully",
+    });
   } catch (error) {
     console.error("Error saving draft:", error);
     res.status(500).json({ error: error.message });

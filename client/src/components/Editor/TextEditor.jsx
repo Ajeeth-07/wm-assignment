@@ -10,6 +10,8 @@ import {
   Typography,
   Box,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -24,10 +26,34 @@ const TextEditor = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const { idToken } = useAuth();
+  const [createdAt, setCreatedAt] = useState(null);
+  const [dirty, setDirty] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [draftIdState, setDraftIdState] = useState(null);
+
+  const { idToken, currentUser } = useAuth();
   const navigate = useNavigate();
   const { draftId } = useParams();
-  const [showReconnectButton, setShowReconnectButton] = useState(null);
+  const [showReconnectButton, setShowReconnectButton] = useState(false);
+
+  const actualDraftId = draftIdState || draftId;
+
+  // Show a snackbar message
+  const showSnackbar = (message, severity = "info") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const modules = {
     toolbar: [
@@ -46,37 +72,91 @@ const TextEditor = () => {
       setLoading(true);
       api
         .getDraft(idToken, draftId)
-        .then((data) => {
-          setTitle(data.title);
-          setContent(data.content);
+        .then((response) => {
+          const data = response.data;
+          setTitle(data.title || "");
+          setContent(data.content || "");
+          setCreatedAt(data.createdAt || new Date().toISOString());
           setLoading(false);
+          setDirty(false);
         })
         .catch((err) => {
-          setError("Failed to load draft: " + err.message);
+          setError(
+            "Failed to load draft: " +
+              (err.response?.data?.error || err.message)
+          );
           setLoading(false);
         });
+    } else {
+      // For new drafts, initialize createdAt
+      setCreatedAt(new Date().toISOString());
     }
   }, [draftId, idToken]);
 
+  // Mark as dirty when content changes
+  useEffect(() => {
+    if (content) {
+      setDirty(true);
+    }
+  }, [content, title]);
+
+  // Update the saveDraft function
   const saveDraft = async () => {
-    if (!title) {
-      setError("Please enter a title");
+    if (!currentUser) {
+      showSnackbar("You must be logged in to save drafts", "error");
       return;
     }
 
-    setSaving(true);
-    setError("");
-
     try {
-      if (draftId) {
-        await api.updateDraft(idToken, draftId, { title, content });
+      setSaving(true);
+      setError("");
+
+      console.log(
+        "Saving draft:",
+        actualDraftId ? "update existing" : "create new"
+      );
+
+      const draftData = {
+        title: title || "Untitled Draft",
+        content: content,
+        userId: currentUser.uid,
+        updatedAt: new Date().toISOString(),
+        createdAt: createdAt || new Date().toISOString(),
+      };
+
+      let response;
+
+      if (actualDraftId) {
+        // Update existing draft
+        response = await api.updateDraft(idToken, actualDraftId, draftData);
+        console.log("Draft updated successfully:", actualDraftId);
+        showSnackbar("Draft updated successfully", "success");
       } else {
-        const result = await api.createDraft(idToken, { title, content });
-        navigate(`/editor/${result.draftId}`);
+        // Create new draft
+        response = await api.createDraft(idToken, draftData);
+        console.log("New draft created:", response.data?.id);
+
+        // Update URL without reloading the page
+        if (response.data && response.data.id) {
+          setDraftIdState(response.data.id);
+          window.history.pushState(
+            {},
+            `Edit Draft - ${title || "Untitled Draft"}`,
+            `/editor/${response.data.id}`
+          );
+        }
+        showSnackbar("Draft created successfully", "success");
       }
-      setSaving(false);
-    } catch (err) {
-      setError("Failed to save draft: " + err.message);
+
+      setDirty(false);
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      showSnackbar(
+        "Failed to save draft: " +
+          (error.response?.data?.error || error.message),
+        "error"
+      );
+    } finally {
       setSaving(false);
     }
   };
@@ -88,6 +168,11 @@ const TextEditor = () => {
       return;
     }
 
+    if (!currentUser) {
+      showSnackbar("You must be logged in to save to Google Drive", "error");
+      return;
+    }
+
     setUploading(true);
     setError("");
 
@@ -96,7 +181,7 @@ const TextEditor = () => {
       setUploading(false);
       setSuccess(
         `Successfully saved to Google Drive! ${
-          response.viewLink ? `View: ${response.viewLink}` : ""
+          response.data?.viewLink ? `View: ${response.data.viewLink}` : ""
         }`
       );
 
@@ -134,11 +219,11 @@ const TextEditor = () => {
 
       // Redirect to Google auth with force=true to ensure we get fresh permissions
       const redirectUri = window.location.origin + "/auth/google-callback";
-      const { url } = await api.getGoogleAuthUrl(redirectUri, true);
+      const response = await api.getGoogleAuthUrl(redirectUri, true);
 
-      if (url) {
+      if (response.data?.url) {
         // Navigate to the auth URL
-        window.location.href = url;
+        window.location.href = response.data.url;
       } else {
         setError("Failed to get Google authentication URL");
       }
@@ -158,7 +243,7 @@ const TextEditor = () => {
   return (
     <Paper elevation={3} sx={{ padding: 3, maxWidth: 1000, margin: "0 auto" }}>
       <Typography variant="h4" gutterBottom>
-        {draftId ? "Edit Letter" : "Create New Letter"}
+        {actualDraftId ? "Edit Letter" : "Create New Letter"}
       </Typography>
 
       {error && (
@@ -181,7 +266,7 @@ const TextEditor = () => {
       )}
 
       {success && (
-        <Typography color="success" sx={{ mb: 2 }}>
+        <Typography color="success.main" sx={{ mb: 2 }}>
           {success}
         </Typography>
       )}
@@ -232,6 +317,23 @@ const TextEditor = () => {
           {uploading ? "Uploading..." : "Save to Google Drive"}
         </Button>
       </Box>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

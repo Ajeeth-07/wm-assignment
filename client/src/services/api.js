@@ -103,17 +103,33 @@ const api = {
   },
 
   createDraft: async (token, draft) => {
-    const response = await apiClient.post("/drafts", draft, authRequest(token));
-    return response.data;
+    try {
+      const response = await apiClient.post(
+        "/drafts",
+        draft,
+        authRequest(token)
+      );
+      return response;
+    } catch (error) {
+      console.error("Create draft error:", error);
+      // Rethrow for component to handle
+      throw error;
+    }
   },
 
   updateDraft: async (token, draftId, draft) => {
-    const response = await apiClient.put(
-      `/drafts/${draftId}`,
-      draft,
-      authRequest(token)
-    );
-    return response.data;
+    try {
+      const response = await apiClient.put(
+        `/drafts/${draftId}`,
+        draft,
+        authRequest(token)
+      );
+      return response;
+    } catch (error) {
+      console.error("Update draft error:", error);
+      // Rethrow for component to handle
+      throw error;
+    }
   },
 
   deleteDraft: async (token, draftId) => {
