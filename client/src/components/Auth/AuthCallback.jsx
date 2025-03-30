@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
 
 const AuthCallback = () => {
@@ -12,11 +12,15 @@ const AuthCallback = () => {
   useEffect(() => {
     async function handleCallback() {
       try {
-        // Get the code from localStorage (set by the callback page)
-        const code = localStorage.getItem("googleAuthCode");
+        // Instead of localStorage, get the code from URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+
+        // Log for debugging
+        console.log("Auth callback received, code present:", !!code);
 
         if (!code) {
-          setError("No authorization code found");
+          setError("No authorization code found in URL parameters");
           return;
         }
 
@@ -35,9 +39,6 @@ const AuthCallback = () => {
         if (user && user.uid && response.data && response.data.tokens) {
           await api.storeFirebaseToken(user.uid, response.data.tokens);
           setStatus("Successfully connected to Google Drive!");
-
-          // Clear the code from localStorage
-          localStorage.removeItem("googleAuthCode");
 
           // Navigate back to homepage after 2 seconds
           setTimeout(() => {
