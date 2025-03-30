@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [idToken, setIdToken] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -46,37 +47,34 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      // Perform Firebase authentication
+      setLoading(true);
+      setError("");
+
+      // Make sure this is directly triggered by a user action (button click)
       const result = await signInWithPopup(auth, googleProvider);
+
+      // Get the user from the result
       const user = result.user;
-
-      // Get the Firebase ID token (not just OAuth access token)
-      const idToken = await user.getIdToken();
-      setIdToken(idToken);
-      setCurrentUser(user);
-
-      try {
-        // Try to exchange with backend - but don't fail the whole login if this fails
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const accessToken = credential.accessToken;
-
-        if (accessToken) {
-          // Store the token in backend
-          await api.storeUserTokens(user.uid, {
-            access_token: accessToken,
-            id_token: idToken,
-          });
-        }
-      } catch (backendError) {
-        // Log backend error but don't fail the authentication
-        console.warn("Backend token exchange failed:", backendError);
-        console.warn("Google Drive features may be limited");
-      }
+      console.log("Google sign-in successful:", user.displayName);
 
       return user;
     } catch (error) {
       console.error("Error signing in with Google:", error);
-      throw error;
+
+      // Provide better user feedback based on error type
+      if (error.code === "auth/popup-blocked") {
+        setError(
+          "Popup was blocked. Please allow popups for this site in your browser settings."
+        );
+      } else if (error.code === "auth/cancelled-popup-request") {
+        setError("Sign-in was cancelled.");
+      } else {
+        setError(`Login error: ${error.message}`);
+      }
+
+      return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -92,8 +90,17 @@ export const AuthProvider = ({ children }) => {
       loading,
       signInWithGoogle,
       logout,
+      error,
     }),
-    [currentUser, userProfile, idToken, loading, signInWithGoogle, logout]
+    [
+      currentUser,
+      userProfile,
+      idToken,
+      loading,
+      signInWithGoogle,
+      logout,
+      error,
+    ]
   );
 
   return (

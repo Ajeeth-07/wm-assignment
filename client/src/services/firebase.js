@@ -2,23 +2,24 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCVrHAfz4MOgtpSI1IspocGBbf16nWDU04",
-  authDomain: "assignment-a3612.firebaseapp.com",
-  projectId: "assignment-a3612",
-  storageBucket: "assignment-a3612.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Add if available
-  appId: "YOUR_APP_ID", // Add if available
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
+// For debugging in deployment
+console.log("Firebase config domain:", firebaseConfig.authDomain);
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Configure Google provider
+// Customize the auth provider for better user experience
 googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
 export { auth, googleProvider, signInWithPopup };
-export default app;
