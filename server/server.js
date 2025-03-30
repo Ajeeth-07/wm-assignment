@@ -27,7 +27,7 @@ app.use(
       "http://localhost:3000",
       "https://accounts.google.com",
       // Add your production frontend URL here
-      "https://your-frontend-url.com",
+      "https://wm-assignment-umber.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
