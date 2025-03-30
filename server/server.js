@@ -50,9 +50,9 @@ app.get("/debug/env", (req, res) => {
 });
 
 //routes
-app.use("/api/auth", authRoutes);
-app.use("/api/drafts", draftRoutes);
-app.use("/api/drive", driveRoutes);
+app.use("/auth", authRoutes);
+app.use("/drafts", draftRoutes);
+app.use("/drive", driveRoutes);
 
 // Add a simple health check endpoint
 app.get("/health", (req, res) => {
