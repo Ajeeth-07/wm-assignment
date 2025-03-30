@@ -26,7 +26,6 @@ const AuthCallback = () => {
         const response = await api.exchangeGoogleCode({
           code,
           redirectUri:
-            process.env.GOOGLE_REDIRECT_URI ||
             "https://wm-assignment-backend.onrender.com/auth/google-callback",
         });
 
