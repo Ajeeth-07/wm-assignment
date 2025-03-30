@@ -1,54 +1,56 @@
-const { admin } = require("../config/firebase");
+const admin = require("../config/firebase");
 
 const verifyToken = async (req, res, next) => {
+  console.log("📝 Auth Debug Info:");
+  console.log("- Headers present:", Object.keys(req.headers));
+
+  // Try multiple ways to get the authorization header
+  const authHeader =
+    req.headers.authorization ||
+    req.headers.Authorization ||
+    req.get("authorization");
+
+  if (!authHeader) {
+    console.log("- No Authorization header found");
+    return res.status(401).json({ error: "No authorization token provided" });
+  }
+
+  console.log("- Authorization header:", authHeader.substring(0, 15) + "...");
+
   try {
-    // Debug information
-    console.log("📝 Auth Debug Info:");
-    console.log("- Headers present:", Object.keys(req.headers));
-    console.log(
-      "- Authorization header:",
-      req.headers.authorization ? "Present" : "Missing"
-    );
+    // Extract the token from the Authorization header
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : authHeader;
 
-    // Check for header case sensitivity (common issue)
-    const authHeader =
-      req.headers.authorization ||
-      req.headers.Authorization ||
-      req.get("authorization") ||
-      req.get("Authorization");
-
-    console.log(
-      "- Using header value:",
-      authHeader || "None found with any case"
-    );
-
-    // Extract token
-    const idToken = authHeader?.split("Bearer ")[1];
-
-    console.log(
-      "- Extracted token:",
-      idToken ? `${idToken.substring(0, 10)}...` : "None"
-    );
-
-    if (!idToken) {
-      return res.status(401).json({ error: "Unauthorized: No token provided" });
+    if (!token) {
+      console.log("- No token found in header");
+      return res.status(401).json({ error: "Invalid token format" });
     }
 
-    // Verify token
-    try {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      console.log("- Token verified for user:", decodedToken.uid);
-      req.user = decodedToken;
-      next();
-    } catch (verifyError) {
-      console.error("- Token verification failed:", verifyError.message);
-      return res
-        .status(401)
-        .json({ error: `Invalid token: ${verifyError.message}` });
-    }
+    // Verify the token with Firebase Admin
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    console.log("- Token verified for user:", uid);
+
+    // Set user info on request object
+    req.user = {
+      uid,
+      email: decodedToken.email,
+      name: decodedToken.name || "",
+      picture: decodedToken.picture || "",
+    };
+
+    next();
   } catch (error) {
-    console.error("Error in auth middleware:", error);
-    res.status(500).json({ error: "Server error during authentication" });
+    console.error("🔥 Auth Error:", error.message);
+    console.error("Error code:", error.code);
+    console.error("Error details:", error);
+
+    return res.status(401).json({
+      error: "Authentication failed",
+      details: error.message,
+    });
   }
 };
 

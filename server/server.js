@@ -37,7 +37,7 @@ app.use(express.json());
 
 // Add this before setting up the main routes
 // Debug routes
-app.get("/debug/env", (req, res) => {
+app.get("/api/debug/env", (req, res) => {
   res.json({
     environment: process.env.NODE_ENV || "not set",
     redirectUri: process.env.GOOGLE_REDIRECT_URI,
@@ -50,9 +50,9 @@ app.get("/debug/env", (req, res) => {
 });
 
 //routes
-app.use("/auth", authRoutes);
-app.use("/drafts", draftRoutes);
-app.use("/drive", driveRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/drafts", draftRoutes);
+app.use("/api/drive", driveRoutes);
 
 // Add a simple health check endpoint
 app.get("/health", (req, res) => {
@@ -60,16 +60,6 @@ app.get("/health", (req, res) => {
     status: "ok",
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
-  });
-});
-
-// Add this after your routes but before app.listen()
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({
-    error: err.message || "Internal server error",
-    stack: process.env.NODE_ENV === "production" ? "🥞" : err.stack,
   });
 });
 
