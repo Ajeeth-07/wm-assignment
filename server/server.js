@@ -25,6 +25,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
+      "https://accounts.google.com",
       // Add your production frontend URL here
       "https://your-frontend-url.com",
     ],
@@ -34,6 +35,57 @@ app.use(
   })
 );
 app.use(express.json());
+
+// Add this before your API routes setup
+// Handle Google OAuth callback directly at the root path
+app.get("/auth/google-callback", (req, res) => {
+  const code = req.query.code;
+  const redirectUri = req.query.state; // If you passed state param with redirectUri
+
+  console.log(
+    "Received Google callback with code:",
+    code ? "present" : "missing"
+  );
+
+  // Create an HTML page to handle the redirect with JavaScript
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Processing Google Auth...</title>
+      <script>
+        // Function to handle the callback on the client side
+        function handleCallback() {
+          const code = "${code}";
+          const redirectUri = "${process.env.GOOGLE_REDIRECT_URI}";
+          
+          // Store the auth code in localStorage
+          localStorage.setItem('googleAuthCode', code);
+          
+          // Redirect back to the frontend
+          window.location.href = "${
+            process.env.FRONTEND_URL || "http://localhost:5173"
+          }/auth-callback";
+        }
+        
+        // Execute when page loads
+        window.onload = handleCallback;
+      </script>
+    </head>
+    <body>
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center;">
+          <h2>Processing your Google authorization...</h2>
+          <p>Please wait while we complete the authentication process.</p>
+          <p>If you're not redirected automatically, <a href="${
+            process.env.FRONTEND_URL || "http://localhost:5173"
+          }/auth-callback">click here</a>.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
 
 // Add this before setting up the main routes
 // Debug routes

@@ -1,12 +1,9 @@
 import axios from "axios";
 
-
-
 // Set up API client with the correct base URL
 const apiClient = axios.create({
-  baseURL: 
-    "https://wm-assignment-backend.onrender.com/api",
-    
+  baseURL: "https://wm-assignment-backend.onrender.com/api",
+
   headers: {
     "Content-Type": "application/json",
   },
@@ -86,6 +83,22 @@ const api = {
     // Since we don't have this endpoint, we'll use a simpler approach
     // that doesn't require additional server endpoints
     return await apiClient.post("/auth/clear-tokens", { uid });
+  },
+
+  exchangeGoogleCode: async (data) => {
+    return await apiClient.post("/auth/google-callback", {
+      code: data.code,
+      redirectUri: data.redirectUri,
+    });
+  },
+
+  storeFirebaseToken: async (uid, tokens) => {
+    return await apiClient.post("/auth/firebase-token", {
+      uid,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      idToken: tokens.id_token,
+    });
   },
 
   // Draft endpoints

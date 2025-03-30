@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import DraftList from "./components/Drafts/DraftList";
 import TextEditor from "./components/Editor/TextEditor";
 import GoogleCallback from "./components/Auth/GoogleCallback";
+import AuthCallback from "./components/Auth/AuthCallback";
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -64,6 +65,7 @@ function AppContent() {
           />
 
           <Route path="/auth/google-callback" element={<GoogleCallback />} />
+          <Route path="/auth-callback" element={<AuthCallback />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
