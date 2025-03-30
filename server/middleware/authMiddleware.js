@@ -1,4 +1,5 @@
-const admin = require("../config/firebase");
+// Update imports at the top
+const { admin } = require("../config/firebase");
 
 const verifyToken = async (req, res, next) => {
   console.log("📝 Auth Debug Info:");
@@ -18,6 +19,11 @@ const verifyToken = async (req, res, next) => {
   console.log("- Authorization header:", authHeader.substring(0, 15) + "...");
 
   try {
+    // Check if Firebase Admin is initialized
+    if (!admin || !admin.auth) {
+      throw new Error("Firebase Admin not properly initialized");
+    }
+
     // Extract the token from the Authorization header
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.substring(7)
