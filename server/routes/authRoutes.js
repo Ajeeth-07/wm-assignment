@@ -15,11 +15,12 @@ router.post("/tokens", storeUserTokens);
 
 router.get("/profile", verifyToken, getUserProfile);
 
-// Make sure your google-auth-url endpoint supports the force parameter
+// Update your google-auth-url endpoint
 router.get("/google-auth-url", async (req, res) => {
   try {
-    const redirectUri =
-      req.query.redirectUri || process.env.GOOGLE_REDIRECT_URI;
+    // Always use the environment variable from the server in production
+    // This ignores any client-provided redirectUri
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
     const forceConsent = req.query.force === "true";
 
     console.log("Using redirect URI for auth URL:", redirectUri);

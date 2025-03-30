@@ -1,36 +1,35 @@
 const admin = require("firebase-admin");
 
-// Update how you retrieve the private key
-const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-let formattedKey = privateKey;
+let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-// Handle different key formats
-if (privateKey.startsWith('"') || privateKey.startsWith("'")) {
-  // If the key is already quoted in the environment variable
-  formattedKey = JSON.parse(privateKey);
-} else if (privateKey.startsWith("{")) {
-  // If the key is stored as a JSON object
-  try {
-    const keyObject = JSON.parse(privateKey);
-    formattedKey = keyObject.privateKey;
-  } catch (e) {
-    // In case parsing fails
-    formattedKey = privateKey.replace(/\\n/g, "\n");
-  }
-} else {
-  // Default handling
-  formattedKey = privateKey.replace(/\\n/g, "\n");
+// Handle different possible formats of the key
+if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+  // If the key is already wrapped in quotes, parse it
+  privateKey = JSON.parse(privateKey);
+} else if (privateKey.includes("\\n")) {
+  // Replace escaped newlines with actual newlines
+  privateKey = privateKey.replace(/\\n/g, "\n");
 }
 
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: formattedKey,
-  }),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-});
+// Initialize Firebase Admin
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: privateKey,
+    }),
+    databaseURL:
+      process.env.FIREBASE_DATABASE_URL ||
+      `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+  });
+  console.log("Firebase Admin SDK initialized successfully!");
+} catch (error) {
+  console.error("Error initializing Firebase Admin SDK:", error);
+  console.error(
+    "Private key format issue? First 20 chars:",
+    privateKey.substring(0, 20)
+  );
+}
 
-const db = admin.firestore();
-
-module.exports = { admin, db };
+module.exports = admin;

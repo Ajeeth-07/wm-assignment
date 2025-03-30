@@ -1,14 +1,20 @@
 import axios from "axios";
 
+// Determine if we're in production
+const isProd =
+  import.meta.env?.PROD || window.location.hostname !== "localhost";
 
-
-// Create axios instance with default config
+// Set up API client with the correct base URL
 const apiClient = axios.create({
-  baseURL: "https://wm-assignment-backend.onrender.com/api",
+  baseURL: isProd
+    ? "https://wm-assignment-backend.onrender.com/api"
+    : "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+console.log("API client initialized with baseURL:", apiClient.defaults.baseURL);
 
 // Add auth token to requests
 const authRequest = (token) => {
