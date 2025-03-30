@@ -1,14 +1,12 @@
 import axios from "axios";
 
-// Determine if we're in production
-const isProd =
-  import.meta.env?.PROD || window.location.hostname !== "localhost";
+
 
 // Set up API client with the correct base URL
 const apiClient = axios.create({
-  baseURL: isProd
-    ? "https://wm-assignment-backend.onrender.com/api"
-    : "http://localhost:5000/api",
+  baseURL: 
+    "https://wm-assignment-backend.onrender.com/api",
+    
   headers: {
     "Content-Type": "application/json",
   },
