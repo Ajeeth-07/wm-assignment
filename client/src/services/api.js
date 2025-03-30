@@ -95,11 +95,30 @@ const api = {
   },
 
   getDraft: async (token, draftId) => {
-    const response = await apiClient.get(
-      `/drafts/${draftId}`,
-      authRequest(token)
-    );
-    return response.data;
+    try {
+      if (!draftId) {
+        throw new Error("Draft ID is required");
+      }
+
+      console.log("Fetching draft:", draftId);
+
+      const response = await apiClient.get(
+        `/drafts/${draftId}`,
+        authRequest(token)
+      );
+
+      // Log the response for debugging
+      console.log(
+        "Draft API response:",
+        response.status,
+        response.data ? "has data" : "no data"
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Error fetching draft:", error);
+      throw error;
+    }
   },
 
   createDraft: async (token, draft) => {

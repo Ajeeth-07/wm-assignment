@@ -66,21 +66,34 @@ const TextEditor = () => {
     ],
   };
 
-  // Load draft if editing existing
+  // Update your useEffect for loading the draft
   useEffect(() => {
     if (draftId && idToken) {
       setLoading(true);
+      setError("");
+
+      console.log("Attempting to load draft:", draftId);
+
       api
         .getDraft(idToken, draftId)
         .then((response) => {
+          console.log("Draft response:", response);
+
+          // Check if we have a valid response with data
+          if (!response || !response.data) {
+            throw new Error("Invalid response format - no data returned");
+          }
+
           const data = response.data;
-          setTitle(data.title || "");
-          setContent(data.content || "");
-          setCreatedAt(data.createdAt || new Date().toISOString());
+          // Safely access properties with fallbacks
+          setTitle(data?.title || "");
+          setContent(data?.content || "");
+          setCreatedAt(data?.createdAt || new Date().toISOString());
           setLoading(false);
           setDirty(false);
         })
         .catch((err) => {
+          console.error("Error loading draft:", err);
           setError(
             "Failed to load draft: " +
               (err.response?.data?.error || err.message)
@@ -99,6 +112,26 @@ const TextEditor = () => {
       setDirty(true);
     }
   }, [content, title]);
+
+  // Add this useEffect to use the dirty variable
+  useEffect(() => {
+    // Create an unsaved changes warning when trying to leave the page
+    const handleBeforeUnload = (e) => {
+      if (dirty) {
+        // This message might not be displayed in all browsers but the prompt will still appear
+        const message =
+          "You have unsaved changes. Are you sure you want to leave?";
+        e.returnValue = message;
+        return message;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [dirty]);
 
   // Update the saveDraft function
   const saveDraft = async () => {
@@ -222,7 +255,10 @@ const TextEditor = () => {
       const response = await api.getGoogleAuthUrl(redirectUri, true);
 
       if (response.data?.url) {
-        // Navigate to the auth URL
+        // Use navigate to save the current state to history stack
+        // and allow users to go back to editor after reconnecting
+        navigate("/connecting-to-google");
+        // Then redirect to Google OAuth
         window.location.href = response.data.url;
       } else {
         setError("Failed to get Google authentication URL");
@@ -315,6 +351,24 @@ const TextEditor = () => {
           startIcon={<CloudUploadIcon />}
         >
           {uploading ? "Uploading..." : "Save to Google Drive"}
+        </Button>
+
+        {/* Add this button */}
+        <Button
+          variant="outlined"
+          onClick={() => {
+            if (
+              dirty &&
+              !window.confirm(
+                "You have unsaved changes. Are you sure you want to leave?"
+              )
+            ) {
+              return;
+            }
+            navigate("/");
+          }}
+        >
+          Back to Drafts
         </Button>
       </Box>
 

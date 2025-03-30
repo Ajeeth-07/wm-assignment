@@ -98,25 +98,35 @@ const getDraft = async (req, res) => {
     const draftId = req.params.draftId;
     const userId = req.user.uid;
 
-    const draftDoc = await db.collection("drafts").doc(draftId).get();
+    console.log(`Fetching draft ${draftId} for user ${userId}`);
 
-    if (!draftDoc.exists) {
+    if (!draftId) {
+      return res.status(400).json({ error: "Draft ID is required" });
+    }
+
+    const draftRef = db.collection("drafts").doc(draftId);
+    const doc = await draftRef.get();
+
+    if (!doc.exists) {
+      console.log(`Draft ${draftId} not found`);
       return res.status(404).json({ error: "Draft not found" });
     }
 
-    const draft = draftDoc.data();
+    const data = doc.data();
 
-    if (draft.userId !== userId) {
-      return res.status(403).json({ error: "Unauthorized access" });
+    // Security check: ensure user owns this draft
+    if (data.userId !== userId) {
+      console.log(
+        `User ${userId} attempted to access draft owned by ${data.userId}`
+      );
+      return res.status(403).json({ error: "Access denied" });
     }
 
-    res.status(200).json({
-      id: draftDoc.id,
-      ...draft,
-    });
+    console.log(`Successfully fetched draft ${draftId}`);
+    return res.json(data);
   } catch (error) {
-    console.error("Error fetching draft:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Error getting draft:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
