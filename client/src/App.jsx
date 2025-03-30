@@ -7,7 +7,7 @@ import {
 import { Box, CssBaseline } from "@mui/material";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
-import Header from "./components/Layout/Header";
+import Header from "./components/layout/Header";
 import Login from "./pages/Login";
 import DraftList from "./components/Drafts/DraftList";
 import TextEditor from "./components/Editor/TextEditor";
