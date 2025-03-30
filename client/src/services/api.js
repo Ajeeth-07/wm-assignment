@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const BASE_URL = "https://wm-assignment-backend.onrender.com";
+
 
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: "https://wm-assignment-backend.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
